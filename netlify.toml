@@ -1,0 +1,3 @@
+[build]
+  command = "GTFS Dashboard.py"
+  publish = ""
