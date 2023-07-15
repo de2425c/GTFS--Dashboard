@@ -105,11 +105,14 @@ def citibike_station_data():
                                     crs="EPSG:4326")
     return citibike_gdf
 
-with open("GTFS/subway_API_Key.txt", "r") as f:
-    subway_API_KEY = f.read().strip()
+# with open("GTFS/subway_API_Key.txt", "r") as f:
+#     subway_API_KEY = f.read().strip()
 
-with open("GTFS/bus_API_Key.txt", "r") as f:
-    bus_API_KEY = f.read().strip()
+# with open("GTFS/bus_API_Key.txt", "r") as f:
+#     bus_API_KEY = f.read().strip()
+
+subway_API_KEY = os.getenv("SUBWAY_API_KEY")
+bus_API_KEY = os.getenv("BUS_API_KEY")
        
 def export_subway_schedule(api_key):
     urls = [
