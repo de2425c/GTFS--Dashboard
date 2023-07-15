@@ -1,49 +1,65 @@
-import os
-# os.chdir('/Users/zzmin/Desktop/')
-from google.transit import gtfs_realtime_pb2
-from datetime import datetime
-import dash
-from dash import dcc
-from dash import html
-from dash.dependencies import Input, Output, State
-import plotly.graph_objects as go
-import geopandas as gpd
-from shapely.geometry import LineString
 import pandas as pd
-import dash_bootstrap_components as dbc
-from shapely.geometry import Point
-import osmnx as ox
 import geopandas as gpd
+from datetime import datetime
+import osmnx as ox
+import zipfile
+from io import BytesIO
 import json
 import requests
 import urllib.request
 
-subfile = ['bus_bronx','bus_brooklyn','bus_manhattan','bus_queens',
-           'bus_staten_island','subway','LIRR','MNR','bus_new_jersy','NJ_rail']
+import dash
+from dash import dcc
+from dash import html
+import dash_bootstrap_components as dbc
+from dash.dependencies import Input, Output, State
+import plotly.graph_objects as go
 
-dataframes = {} 
+from shapely.geometry import Point
+from shapely.geometry import LineString
+from google.transit import gtfs_realtime_pb2
 
-for subdir in subfile:
-    folder_path = os.path.join('GTFS', subdir)
+subfiles = ['bus_bronx', 'bus_brooklyn', 'bus_manhattan', 'bus_queens', 'bus_staten_island', 'subway', 'LIRR', 'MNR', 'bus_new_jersy', 'NJ_rail']
 
-    routes = pd.read_csv(os.path.join(folder_path, 'routes.txt'))
-    stop_times = pd.read_csv(os.path.join(folder_path, 'stop_times.txt'))
-    stops = pd.read_csv(os.path.join(folder_path, 'stops.txt'))
-    trips = pd.read_csv(os.path.join(folder_path, 'trips.txt'))
+dataframes = {}
+for subdir in subfiles:
+    zip_url = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/ec6b2e7659e268254577447e95ef6de36885c1a1/GTFS/{subdir}.zip'
 
-    df = trips[['route_id', 'service_id', 'trip_id']]
-    df = df.merge(stop_times[['trip_id', 'arrival_time', 'departure_time', 'stop_sequence', 'stop_id']],
-                  left_on='trip_id', right_on='trip_id', how='left')
-    df = df.merge(stops[['stop_id', 'stop_name', 'stop_lat', 'stop_lon']],
-                  left_on='stop_id', right_on='stop_id', how='left')
-    df = df.merge(routes[['route_id', 'route_long_name', 'route_color']],
-                  left_on='route_id', right_on='route_id', how='left')
+    zip_response = requests.get(zip_url)
 
-    route_color_mapping = df.set_index('route_id')['route_color'].fillna('000000').astype(str).apply(lambda x: "#" + x).to_dict()
-    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['stop_lon'], df['stop_lat']))
-    gdf.crs = "EPSG:4326"
-    gdf['color'] = gdf['route_id'].map(route_color_mapping)
-    dataframes[subdir] = gdf
+    if zip_response.status_code == 200:
+        zip_data = BytesIO(zip_response.content)
+
+        with zipfile.ZipFile(zip_data, 'r') as zip_ref:
+            file_list = zip_ref.namelist()
+
+            routes_file = [file for file in file_list if 'routes.txt' in file][0]
+            stop_times_file = [file for file in file_list if 'stop_times.txt' in file][0]
+            stops_file = [file for file in file_list if 'stops.txt' in file][0]
+            trips_file = [file for file in file_list if 'trips.txt' in file][0]
+
+            routes = pd.read_csv(zip_ref.open(routes_file))
+            stop_times = pd.read_csv(zip_ref.open(stop_times_file))
+            stops = pd.read_csv(zip_ref.open(stops_file))
+            trips = pd.read_csv(zip_ref.open(trips_file))
+
+            df = trips[['route_id', 'service_id', 'trip_id']]
+            df = df.merge(stop_times[['trip_id', 'arrival_time', 'departure_time', 'stop_sequence', 'stop_id']],
+                          left_on='trip_id', right_on='trip_id', how='left')
+            df = df.merge(stops[['stop_id', 'stop_name', 'stop_lat', 'stop_lon']],
+                          left_on='stop_id', right_on='stop_id', how='left')
+            df = df.merge(routes[['route_id', 'route_long_name', 'route_color']],
+                          left_on='route_id', right_on='route_id', how='left')
+
+            route_color_mapping = df.set_index('route_id')['route_color'].fillna('000000').astype(str).apply(lambda x: "#" + x).to_dict()
+            gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['stop_lon'], df['stop_lat']))
+            gdf.crs = "EPSG:4326"
+            gdf['color'] = gdf['route_id'].map(route_color_mapping)
+
+            dataframes[subdir] = gdf
+    else:
+        print(f'Failed to fetch ZIP file: {zip_url}')
+
 
 dataframes['bus_new_jersy']['color'] = '#00FF00'
 transportation = ['Bus','Subway', 'Citibike','LIRR','MNR','NJ rail']
