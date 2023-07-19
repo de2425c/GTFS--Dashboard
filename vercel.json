@@ -1,0 +1,8 @@
+{
+  "builds": [
+    {
+      "src": "GTFS Dashboard.py", 
+      "use": "@vercel/python"
+    }
+  ]
+}
