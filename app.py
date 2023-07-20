@@ -28,7 +28,7 @@ for subdir in subfiles:
     response = requests.get(pkl_url)
     if response.status_code == 200:
         pkl_data = response.content
-        df = pickle.loads(pkl_data)
+        df = pickle.loads(pkl_data, protocol=4)
         dataframes[subdir] = df
     else:
         print(f'Failed to fetch pkl file: {pkl_url}')
