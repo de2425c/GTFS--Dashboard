@@ -23,7 +23,7 @@ subfiles = ['bus_bronx', 'bus_brooklyn', 'bus_manhattan', 'bus_queens', 'bus_sta
 
 dataframes = {}
 for subdir in subfiles:
-    zip_url = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/ec6b2e7659e268254577447e95ef6de36885c1a1/GTFS/{subdir}.zip'
+    zip_url = f'https://github.com/ZzMinn/GTFS-Dashboard/blob/f866892ee36b28d4c37a777788b0094122e16987/data/{subdir}.zip'
 
     zip_response = requests.get(zip_url)
 
