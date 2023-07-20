@@ -9,3 +9,4 @@ gtfs-realtime-bindings
 folium
 geojson
 gunicorn
+pickle5==0.0.11
