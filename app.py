@@ -252,6 +252,8 @@ osm = osm.reset_index()[["osmid", "name", "geometry"]]
 styles = {'background': '#262729', 'textColor': '#ffffff', 'marginColor': '#0e1012'}
 
 app = dash.Dash(__name__)
+server = app.server
+
 app.layout = html.Div(
     children=[
         html.Br(),
