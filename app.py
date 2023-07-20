@@ -7,7 +7,7 @@ from io import BytesIO
 import json
 import requests
 # import pickle5 as pickle
-import pickle
+# import pickle
 import urllib.request
 
 import dash
@@ -21,21 +21,22 @@ from shapely.geometry import Point
 from shapely.geometry import LineString
 from google.transit import gtfs_realtime_pb2
 
-# from joblib import load
+from joblib import load
 
 subfiles = ['bus_bronx', 'bus_brooklyn', 'bus_manhattan', 'bus_queens', 'bus_staten_island', 'subway', 'LIRR', 'MNR', 'bus_new_jersy', 'NJ_rail']
 dataframes = {}
 
 # pickle.dumps(data, protocol=4)
 for subdir in subfiles:
-    pkl_url = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/c2208ae9122b5cc393c14e2ce7db7485f749a757/data/{subdir}.pkl'
+    pkl_url = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/297121bbffe42475d0e903ee5e1063872072e04f/data/{subdir}.joblib'
     # https://github.com/ZzMinn/GTFS-Dashboard/blob/c2208ae9122b5cc393c14e2ce7db7485f749a757/data/LIRR.pkl
+    # https://github.com/ZzMinn/GTFS-Dashboard/blob/297121bbffe42475d0e903ee5e1063872072e04f/data/LIRR.joblib
     response = requests.get(pkl_url)
     if response.status_code == 200:
         pkl_data = response.content
         # pickle.dumps(pkl_data)
-        # df = load(BytesIO(pkl_data))
-        df = pickle.loads(pkl_data)
+        df = load(BytesIO(pkl_data))
+        # df = pickle.loads(pkl_data)
         dataframes[subdir] = df
     else:
         print(f'Failed to fetch pkl file: {pkl_url}')
