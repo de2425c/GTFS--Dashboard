@@ -34,7 +34,7 @@ for subdir in subfiles:
     # https://github.com/ZzMinn/GTFS-Dashboard/blob/b3d48a63512152aaebad1947d6b4dd6391e104c4/data/LIRR.pkl
     # https://github.com/ZzMinn/GTFS-Dashboard/blob/f885cad9754d8752475f9b06f76e14fc72bd016f/data/bus_brooklyn.pkl
     # https://github.com/ZzMinn/GTFS-Dashboard/blob/e16af922ffe4d1eebe8b0e11e06515232282626b/data/MNR.csv
-    response = requests.get(pkl_url)
+    response = requests.get(csv_data)
     if response.status_code == 200:
         df = pd.read_csv(io.StringIO(csv_data))
         dataframes[subdir] = df
