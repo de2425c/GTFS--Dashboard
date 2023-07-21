@@ -3,7 +3,7 @@ import geopandas as gpd
 from datetime import datetime
 import osmnx as ox
 import zipfile
-from io import BytesIO
+import io
 import json
 import requests
 # import pickle5 as pickle
