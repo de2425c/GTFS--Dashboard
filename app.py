@@ -26,15 +26,16 @@ from google.transit import gtfs_realtime_pb2
 subfiles = ['bus_bronx', 'bus_brooklyn', 'bus_manhattan', 'bus_queens', 'bus_staten_island', 'subway', 'LIRR', 'MNR', 'bus_new_jersy', 'NJ_rail']
 dataframes = {}
 
-# pickle.dumps(data, protocol=4)
 for subdir in subfiles:
-    csv_data = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/e16af922ffe4d1eebe8b0e11e06515232282626b/data/{subdir}.csv'
-    response = requests.get(csv_data)
+    csv_url = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/e16af922ffe4d1eebe8b0e11e06515232282626b/data/{subdir}.csv'
+    response = requests.get(csv_url)
     if response.status_code == 200:
-        df = pd.read_csv(io.StringIO(csv_data))
+        data = response.content.decode('utf-8')  # Decode the bytes to a string
+        df = pd.read_csv(io.StringIO(data))  # Pass the string to pd.read_csv
         dataframes[subdir] = df
     else:
-        print(f'Failed to fetch pkl file: {csv_data}')
+        print(f'Failed to fetch CSV file: {csv_url}')
+
 
 
 dataframes['bus_new_jersy']['color'] = '#00FF00'
