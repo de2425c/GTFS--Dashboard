@@ -89,6 +89,7 @@ def citibike_station_data():
 #     bus_API_KEY = f.read().strip()
 
 subway_API_KEY = os.getenv("SUBWAY_API_KEY")
+print(subway_API_KEY)
 bus_API_KEY = os.getenv("BUS_API_KEY")
        
 def export_subway_schedule(api_key):
