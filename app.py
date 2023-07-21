@@ -88,9 +88,10 @@ def citibike_station_data():
 # with open("GTFS/bus_API_Key.txt", "r") as f:
 #     bus_API_KEY = f.read().strip()
 
-subway_API_KEY = os.getenv("SUBWAY_API_KEY")
-print(subway_API_KEY)
-bus_API_KEY = os.getenv("BUS_API_KEY")
+# subway_API_KEY = os.environ.get("SUBWAY_API_KEY")
+# bus_API_KEY = os.environ.get("BUS_API_KEY")
+bus_API_KEY = os.getenv("bus_API_KEY")
+subway_API_KEY = os.getenv("subway_API_KEY")
        
 def export_subway_schedule(api_key):
     urls = [
