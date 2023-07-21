@@ -29,11 +29,6 @@ dataframes = {}
 # pickle.dumps(data, protocol=4)
 for subdir in subfiles:
     csv_data = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/e16af922ffe4d1eebe8b0e11e06515232282626b/data/{subdir}.csv'
-    # https://github.com/ZzMinn/GTFS-Dashboard/blob/c2208ae9122b5cc393c14e2ce7db7485f749a757/data/LIRR.pkl
-    # https://github.com/ZzMinn/GTFS-Dashboard/blob/297121bbffe42475d0e903ee5e1063872072e04f/data/LIRR.joblib
-    # https://github.com/ZzMinn/GTFS-Dashboard/blob/b3d48a63512152aaebad1947d6b4dd6391e104c4/data/LIRR.pkl
-    # https://github.com/ZzMinn/GTFS-Dashboard/blob/f885cad9754d8752475f9b06f76e14fc72bd016f/data/bus_brooklyn.pkl
-    # https://github.com/ZzMinn/GTFS-Dashboard/blob/e16af922ffe4d1eebe8b0e11e06515232282626b/data/MNR.csv
     response = requests.get(csv_data)
     if response.status_code == 200:
         df = pd.read_csv(io.StringIO(csv_data))
