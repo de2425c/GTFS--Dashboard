@@ -39,7 +39,7 @@ for subdir in subfiles:
         df = pd.read_csv(io.StringIO(csv_data))
         dataframes[subdir] = df
     else:
-        print(f'Failed to fetch pkl file: {pkl_url}')
+        print(f'Failed to fetch pkl file: {csv_data}')
 
 
 dataframes['bus_new_jersy']['color'] = '#00FF00'
