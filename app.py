@@ -1,42 +1,48 @@
-import pandas as pd
-import geopandas as gpd
-from datetime import datetime
-import osmnx as ox
-import zipfile
-import io
-import json
-import requests
 import os
-import pickle
-import urllib.request
-
+from google.transit import gtfs_realtime_pb2
+from datetime import datetime
 import dash
 from dash import dcc
 from dash import html
-import dash_bootstrap_components as dbc
 from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
-
-from shapely.geometry import Point
+import geopandas as gpd
 from shapely.geometry import LineString
-from google.transit import gtfs_realtime_pb2
+import pandas as pd
+import dash_bootstrap_components as dbc
+from shapely.geometry import Point
+import osmnx as ox
+import geopandas as gpd
+import json
+import requests
+import urllib.request
 
-# from joblib import load
+subfile = ['bus_bronx','bus_brooklyn','bus_manhattan','bus_queens',
+           'bus_staten_island','subway','LIRR','MNR','bus_new_jersy','NJ_rail']
 
-subfiles = ['bus_bronx', 'bus_brooklyn', 'bus_manhattan', 'bus_queens', 'bus_staten_island', 'subway', 'LIRR', 'MNR', 'bus_new_jersy', 'NJ_rail']
-dataframes = {}
+dataframes = {} 
 
-for subdir in subfiles:
-    csv_url = f'https://github.com/ZzMinn/GTFS-Dashboard/raw/e16af922ffe4d1eebe8b0e11e06515232282626b/data/{subdir}.csv'
-    response = requests.get(csv_url)
-    if response.status_code == 200:
-        data = response.content.decode('utf-8')  # Decode the bytes to a string
-        df = pd.read_csv(io.StringIO(data))  # Pass the string to pd.read_csv
-        dataframes[subdir] = df
-    else:
-        print(f'Failed to fetch CSV file: {csv_url}')
+for subdir in subfile:
+    folder_path = os.path.join('GTFS', subdir)
 
+    routes = pd.read_csv(os.path.join(folder_path, 'routes.txt'))
+    stop_times = pd.read_csv(os.path.join(folder_path, 'stop_times.txt'))
+    stops = pd.read_csv(os.path.join(folder_path, 'stops.txt'))
+    trips = pd.read_csv(os.path.join(folder_path, 'trips.txt'))
 
+    df = trips[['route_id', 'service_id', 'trip_id']]
+    df = df.merge(stop_times[['trip_id', 'arrival_time', 'departure_time', 'stop_sequence', 'stop_id']],
+                  left_on='trip_id', right_on='trip_id', how='left')
+    df = df.merge(stops[['stop_id', 'stop_name', 'stop_lat', 'stop_lon']],
+                  left_on='stop_id', right_on='stop_id', how='left')
+    df = df.merge(routes[['route_id', 'route_long_name', 'route_color']],
+                  left_on='route_id', right_on='route_id', how='left')
+
+    route_color_mapping = df.set_index('route_id')['route_color'].fillna('000000').astype(str).apply(lambda x: "#" + x).to_dict()
+    gdf = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df['stop_lon'], df['stop_lat']))
+    gdf.crs = "EPSG:4326"
+    gdf['color'] = gdf['route_id'].map(route_color_mapping)
+    dataframes[subdir] = gdf
 
 dataframes['bus_new_jersy']['color'] = '#00FF00'
 transportation = ['Bus','Subway', 'Citibike','LIRR','MNR','NJ rail']
@@ -82,16 +88,11 @@ def citibike_station_data():
                                     crs="EPSG:4326")
     return citibike_gdf
 
-# with open("GTFS/subway_API_Key.txt", "r") as f:
-#     subway_API_KEY = f.read().strip()
+with open("GTFS/subway_API_Key.txt", "r") as f:
+    subway_API_KEY = f.read().strip()
 
-# with open("GTFS/bus_API_Key.txt", "r") as f:
-#     bus_API_KEY = f.read().strip()
-
-# subway_API_KEY = os.environ.get("SUBWAY_API_KEY")
-# bus_API_KEY = os.environ.get("BUS_API_KEY")
-bus_API_KEY = os.getenv("bus_API_KEY")
-subway_API_KEY = os.getenv("subway_API_KEY")
+with open("GTFS/bus_API_Key.txt", "r") as f:
+    bus_API_KEY = f.read().strip()
        
 def export_subway_schedule(api_key):
     urls = [
@@ -231,8 +232,6 @@ osm = osm.reset_index()[["osmid", "name", "geometry"]]
 styles = {'background': '#262729', 'textColor': '#ffffff', 'marginColor': '#0e1012'}
 
 app = dash.Dash(__name__)
-server = app.server
-
 app.layout = html.Div(
     children=[
         html.Br(),
@@ -416,6 +415,9 @@ def update_gtfs_map(gdf, feeds):
 
     for route_id in all_route_ids:
         route = gdf[gdf['route_id'] == route_id]
+        max_sequence = route['stop_sequence'].max()
+        max_sequence_index = route[route['stop_sequence'] == max_sequence].index[0]
+        longest_sequence = route.loc[max_sequence_index - max_sequence + 1:max_sequence_index]
         
         entity_dict = {}
         for feed in feeds:
@@ -428,18 +430,18 @@ def update_gtfs_map(gdf, feeds):
 
                 entity_dict[str(feed['stop_id'])] = (arrival_time_datetime, departure_time_datetime)  
                 
-        color = route['color'].iloc[0]
+        color = longest_sequence['color'].iloc[0]
         if color == '#000000':
             color = 'blue'
 
 
         fig.add_trace(go.Scattermapbox(
             name=f"Route {route_id}",
-            lon=route.geometry.x,
-            lat=route.geometry.y,
+            lon=longest_sequence.geometry.x,
+            lat=longest_sequence.geometry.y,
             mode='markers+lines',
             marker=dict(symbol='circle', color="white", size=4),
-            text=route.apply(lambda x: f"Route: {x['route_id']} <br> Stop Name: {x['stop_name']} <br> Arrival Time: {entity_dict.get(str(x['stop_id']), ('N/A', 'N/A'))[0]} <br> Departure Time: {entity_dict.get(str(x['stop_id']), ('N/A', 'N/A'))[1]}", axis=1),
+            text=longest_sequence.apply(lambda x: f"Route: {x['route_id']} <br> Stop Name: {x['stop_name']} <br> Arrival Time: {entity_dict.get(str(x['stop_id']), ('N/A', 'N/A'))[0]} <br> Departure Time: {entity_dict.get(str(x['stop_id']), ('N/A', 'N/A'))[1]}", axis=1),
             hoverinfo='text',
             line=dict(width=3, color=color)
         ))
@@ -455,16 +457,19 @@ def update_map(gdf):
 
     for route_id in all_route_ids:
         route = gdf[gdf['route_id'] == route_id]
+        max_sequence = route['stop_sequence'].max()
+        max_sequence_index = route[route['stop_sequence'] == max_sequence].index[0]
+        longest_sequence = route.loc[max_sequence_index - max_sequence + 1:max_sequence_index]
 
         fig.add_trace(go.Scattermapbox(
             name=f"Route {route_id}",
-            lon=route.geometry.x,
-            lat=route.geometry.y,
+            lon=longest_sequence.geometry.x,
+            lat=longest_sequence.geometry.y,
             mode='markers+lines',
             marker=dict(symbol='circle', color="white", size=4),
-            text=route.apply(lambda x: f"Route: {x['route_id']} <br> Stop Name: {x['stop_name']} ", axis=1),
+            text=longest_sequence.apply(lambda x: f"Route: {x['route_id']} <br> Stop Name: {x['stop_name']} ", axis=1),
             hoverinfo='text',
-            line=dict(width=3, color=route['color'].iloc[0])
+            line=dict(width=3, color=longest_sequence['color'].iloc[0])
         ))
         
     return fig
