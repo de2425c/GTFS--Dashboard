@@ -73,10 +73,10 @@ def citibike_station_data():
     data_regions = json.load(regions_response)
 
     info_df = pd.DataFrame(data_info['data']['stations']).set_index('station_id')
-    info_df = info_df[['name', 'lat', 'lon', 'capacity', 'legacy_id', 'region_id']]
+    info_df = info_df[['name', 'lat', 'lon', 'capacity', 'region_id']]
 
     status_df = pd.DataFrame(data_status['data']['stations']).set_index('station_id')
-    status_df = status_df[['num_docks_available', 'num_bikes_disabled', 'num_ebikes_available', 'num_bikes_available', 'num_docks_disabled', 'station_status', 'is_renting', 'is_returning', 'last_reported', 'is_installed']]
+    status_df = status_df[['num_docks_available', 'num_bikes_disabled', 'num_ebikes_available', 'num_bikes_available', 'num_docks_disabled', 'is_renting', 'is_returning', 'last_reported', 'is_installed']]
 
     regions_df = pd.DataFrame(data_regions['data']['regions'])
     regions_df.rename(columns={'name': 'region_name'}, inplace=True)
@@ -349,6 +349,7 @@ app.layout = html.Div(
      Output('nj-transit-route-selector', 'style')],
     [Input('transport-selector', 'value')]
 )
+
 def update_dropdown_styles(value):
     bus_routes_style = {'display': 'block', 'color': '#000000'} if 'Bus' in value else {'display': 'block', 'color': '#000000'}
     route_selector_style = {'display': 'block', 'color': '#000000'} if 'Subway' in value else {'display': 'block', 'color': '#000000'}
@@ -370,6 +371,7 @@ def update_dropdown_styles(value):
     Output('bus-routes-dropdown', 'options'),
     [Input('boroughs_chosen', 'value')]
 )
+
 def update_bus_route_options(boroughs):
     options = []
     if boroughs is not None:
@@ -514,25 +516,29 @@ def update_MNR_map(gdf, feeds):
     return fig
 
 
-def update_citibike_map():
-    # Load the Citibike station data
-    citibike_gdf = citibike_station_data()
-    citibike_gdf = citibike_gdf[citibike_gdf['station_status'] == 'active']
-    citibike_gdf['last_reported'] = citibike_gdf['last_reported'].apply(lambda x: datetime.fromtimestamp(int(x)))
-
+def update_citibike_map(citibike_gdf):
     fig = go.Figure()
+    
+    citibike_gdf['last_reported'] = citibike_gdf['last_reported'].apply(lambda x: datetime.fromtimestamp(int(x)))
+    citibike_regions = citibike_gdf['region_name'].unique()
+    region_color_mapping = {'NYC District': 'blue', 'JC District': 'green','Hoboken District': 'red'}
+    
+    for region in citibike_regions:
+        citibike = citibike_gdf[citibike_gdf['region_name'] == region]
+        region_color = region_color_mapping.get(region, 'blue')
 
-    fig.add_trace(go.Scattermapbox(
-        lon=citibike_gdf.geometry.x,
-        lat=citibike_gdf.geometry.y,
-        mode='markers',
-        marker=dict(
-            size=4,
-            color='blue'
-        ),
-        text=citibike_gdf.apply(lambda x: f"Name: {x['name']} <br> Available Docks: {x['num_docks_available']} <br> Available eBikes: {x['num_ebikes_available']} <br> Available Bikes: {x['num_bikes_available']} <br> Last Reported: {x['last_reported']}", axis=1),
-        hoverinfo='text'
-    ))
+        fig.add_trace(go.Scattermapbox(
+            name=f" {region}",
+            lon=citibike.geometry.x,
+            lat=citibike.geometry.y,
+            mode='markers',
+            marker=dict(
+                size=4,
+                color= region_color
+            ),
+            text=citibike.apply(lambda x: f"Name: {x['name']} <br> Available Docks: {x['num_docks_available']} <br> Available eBikes: {x['num_ebikes_available']} <br> Available Bikes: {x['num_bikes_available']} <br> Last Reported: {x['last_reported']}", axis=1),
+            hoverinfo='text'
+        ))
 
     return fig
 
@@ -543,13 +549,14 @@ def update_citibike_map():
      Input('route-selector', 'value'),
      Input('boroughs_chosen', 'value'),
      Input('bus-routes-dropdown', 'value'),
+     Input('citibike-region-dropdown', 'value'),
      Input('lirr-route-selector', 'value'),
      Input('mnr-route-selector', 'value'),
      Input('nj-transit-route-selector', 'value'),
      Input('interval-component', 'n_intervals')]
 )
 
-def update_map_and_real_time_data(transportation, subway_routes, boroughs, bus_routes, LIRR_routes, MNR_routes, NJrail_routes, n):
+def update_map_and_real_time_data(transportation, subway_routes, boroughs, bus_routes, citibike_region, LIRR_routes, MNR_routes, NJrail_routes, n):
     fig = go.Figure()
     subway_schedule = None
     bus_schedule = None
@@ -571,8 +578,10 @@ def update_map_and_real_time_data(transportation, subway_routes, boroughs, bus_r
             for trace in bus_fig.data:
                 fig.add_trace(trace)
     
-    if 'Citibike' in transportation:
-        citibike_fig = update_citibike_map()
+    if 'Citibike' in transportation and citibike_region is not None:
+        citibike_gdf = citibike_station_data()
+        citibike_gdf = citibike_gdf[citibike_gdf['region_name'].isin(citibike_region)]
+        citibike_fig = update_citibike_map(citibike_gdf)
         for trace in citibike_fig.data:
             fig.add_trace(trace)
             
