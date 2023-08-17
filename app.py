@@ -7,10 +7,8 @@ from dash import html
 from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
 import geopandas as gpd
-from shapely.geometry import LineString
 import pandas as pd
 import dash_bootstrap_components as dbc
-from shapely.geometry import Point
 import osmnx as ox
 import geopandas as gpd
 import json
