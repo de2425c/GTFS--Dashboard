@@ -509,7 +509,14 @@ def update_bus_route_options(boroughs, select_all):
      Output('citibike-region-dropdown', 'value', allow_duplicate=True),
      Output('lirr-route-selector', 'value', allow_duplicate=True),
      Output('mnr-route-selector', 'value', allow_duplicate=True),
-     Output('nj-transit-route-selector', 'value', allow_duplicate=True)],
+     Output('nj-transit-route-selector', 'value', allow_duplicate=True),
+     Output('select-all-bus-regions', 'value'),
+     Output('select-all-bus-route', 'value'),
+     Output('select-all-subway-route', 'value'),
+     Output('select-all-citibike-region', 'value'),
+     Output('select-all-lirr-route', 'value'),
+     Output('select-all-mnr-route', 'value'),
+     Output('select-all-nj-route', 'value')],
     [Input('reset-button', 'n_clicks')],
     prevent_initial_call=True
 )
@@ -517,7 +524,7 @@ def update_bus_route_options(boroughs, select_all):
 def reset_selections(n_clicks):
     if n_clicks is None:
         return dash.no_update
-    return [], [], [subway_id[0]], [], [], [], []
+    return [], [], [subway_id[0]], [], [], [], [], [], [], [], [], [], [], []
     
 def add_bus_location(fig, route_id):
     bus_data = export_bus_location(bus_API_KEY)
