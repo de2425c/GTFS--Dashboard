@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import geopandas as gpd
 import pandas as pd
 import dash_bootstrap_components as dbc
+import osmnx as ox
 import geopandas as gpd
 import json
 import requests
@@ -252,6 +253,7 @@ bus_location = export_bus_location(bus_API_KEY)
 styles = {'background': '#262729', 'textColor': '#ffffff', 'marginColor': '#0e1012'}
 
 app = dash.Dash(__name__)
+
 app.layout = html.Div(
     children=[
         html.Br(),
@@ -261,126 +263,180 @@ app.layout = html.Div(
             style={"margin": "2%", "display": "flex", 'margin-top': '20px'},
             children=[
                 html.Div(
-                    style={"width": "25%", 'vertical-align': 'top'}, 
+                    style={"width": "25%", 'vertical-align': 'top'},
                     children=[
-                        html.P("Bus Region:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
-                        dcc.Checklist(
-                            id='select-all-bus-regions',
-                            options=[{'label': 'Select All', 'value': 'ALL'}],
-                            value=[],
-                            inline=True,
-                            style={"margin-top": "0px", 'color': '#ffffff'}
-                        ),
-                        dcc.Dropdown(
-                            id='boroughs_chosen',
-                            multi = True, searchable=True,
-                            options=[{'label': str(b), 'value': b} for b in boroughs],
-                            value=[],
-                            placeholder="Select a bus region",
-                            style={"margin-top": "0px", 'color': '#000000', "margin-bottom": "5px"}
-                        ),
-                        html.P("Bus Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
-                        dcc.Checklist(
-                            id='select-all-bus-route',
-                            options=[{'label': 'Select All', 'value': 'ALL'}],
-                            value=[],
-                            inline=True,
-                            style={"margin-top": "0px", 'color': '#ffffff'}
-                        ),
-                        dcc.Dropdown(
-                            id='bus-routes-dropdown',
-                            multi=True, searchable=True,
-                            clearable=False,
-                            options=[{'label': str(route_id), 'value': route_id} for route_id in subway_id],
-                            value=[],
-                            placeholder="Select a bus route",
-                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
-                        ),
-                        html.P("Subway Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
-                        dcc.Checklist(
-                            id='select-all-subway-route',
-                            options=[{'label': 'Select All', 'value': 'ALL'}],
-                            value=[],
-                            inline=True,
-                            style={"margin-top": "0px", 'color': '#ffffff'}
-                        ),
-                        dcc.Dropdown(
-                            id='route-selector',
-                            options=[{'label': str(route_id), 'value': route_id} for route_id in subway_id],
-                            multi=True, searchable=True,
-                            value=[subway_id[0]],
-                            placeholder="Select a Subway route",
-                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
-                        ),
-                        
-                        html.P("Citibike Region:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
-                        dcc.Checklist(
-                            id='select-all-citibike-region',
-                            options=[{'label': 'Select All', 'value': 'ALL'}],
-                            value=[],
-                            inline=True,
-                            style={"margin-top": "0px", 'color': '#ffffff'}
-                        ),
-                        dcc.Dropdown(
-                            id='citibike-region-dropdown',
-                            options=[{'label': region, 'value': region} for region in citibike_regions],
-                            multi=True, searchable=True,
-                            placeholder="Select a Citibike region",
-                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
-                        ),
-                        
-                        html.P("LIRR Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
-                        dcc.Checklist(
-                            id='select-all-lirr-route',
-                            options=[{'label': 'Select All', 'value': 'ALL'}],
-                            value=[],
-                            inline=True,
-                            style={"margin-top": "0px", 'color': '#ffffff'}
-                        ),
-                        dcc.Dropdown(
-                            id='lirr-route-selector',
-                            options=[{'label': str(route_id), 'value': route_id} for route_id in LIRR_id],
-                            multi=True, searchable=True,
-                            value=[],
-                            placeholder="Select a LIRR route",
-                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
-                        ),
-                        html.P("MNR Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
-                        dcc.Checklist(
-                            id='select-all-mnr-route',
-                            options=[{'label': 'Select All', 'value': 'ALL'}],
-                            value=[],
-                            inline=True,
-                            style={"margin-top": "0px", 'color': '#ffffff'}
-                        ),
-                        dcc.Dropdown(
-                            id='mnr-route-selector',
-                            options=[{'label': str(route_id), 'value': route_id} for route_id in MNR_id],
-                            multi=True,
-                            value=[],
-                            placeholder="Select a MNR route",
-                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
-                        ),
-                        html.P("NJ Rail Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
-                        dcc.Checklist(
-                            id='select-all-nj-route',
-                            options=[{'label': 'Select All', 'value': 'ALL'}],
-                            value=[],
-                            inline=True,
-                            style={"margin-top": "0px", 'color': '#ffffff'}
-                        ),
-                        dcc.Dropdown(
-                            id='nj-transit-route-selector',
-                            options=[{'label': str(route_id), 'value': route_id} for route_id in NJ_rail_id],
-                            multi=True,
-                            placeholder="Select a NJ Rail route",
-                            style={'display': 'block', 'color': '#000000', "margin-bottom": "15px"}
-                        ),
+                        html.Table([
+                            html.Tr([ 
+                                html.Td(
+                                    style={'vertical-align': 'top', 'margin-bottom': '10px'},
+                                    children=[
+                                        html.P("Bus Region:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
+                                        dcc.Checklist(
+                                            id='select-all-bus-regions',
+                                            options=[{'label': 'Select All', 'value': 'ALL'}],
+                                            value=[],
+                                            inline=True,
+                                            style={"margin-top": "0px", 'color': '#ffffff'}
+                                        ),
+                                        dcc.Dropdown(
+                                            id='boroughs_chosen',
+                                            multi = True, searchable=True,
+                                            options=[{'label': str(b), 'value': b} for b in boroughs],
+                                            value=[],
+                                            placeholder="Select a bus region",
+                                            style={"margin-top": "0px", 'color': '#000000', "margin-bottom": "5px"}
+                                        ),
+                                    ]
+                                ),
+                                html.Td(
+                                    style={'vertical-align': 'top', 'margin-bottom': '10px'},
+                                    children=[
+                                        html.P("Bus Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
+                                        dcc.Checklist(
+                                            id='select-all-bus-route',
+                                            options=[{'label': 'Select All', 'value': 'ALL'}],
+                                            value=[],
+                                            inline=True,
+                                            style={"margin-top": "0px", 'color': '#ffffff'}
+                                        ),
+                                        dcc.Dropdown(
+                                            id='bus-routes-dropdown',
+                                            multi=True, searchable=True,
+                                            clearable=False,
+                                            options=[{'label': str(route_id), 'value': route_id} for route_id in subway_id],
+                                            value=[],
+                                            placeholder="Select a bus route",
+                                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
+                                        ),
+                                    ]
+                                )
+                            ]),
+                                html.Tr([ 
+                                html.Td(
+                                    colSpan=2,
+                                    style={'vertical-align': 'top', 'margin-bottom': '10px'},
+                                    children=[
+                                        html.P("Subway Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
+                                        dcc.Checklist(
+                                            id='select-all-subway-route',
+                                            options=[{'label': 'Select All', 'value': 'ALL'}],
+                                            value=[],
+                                            inline=True,
+                                            style={"margin-top": "0px", 'color': '#ffffff'}
+                                        ),
+                                        dcc.Dropdown(
+                                            id='route-selector',
+                                            options=[{'label': str(route_id), 'value': route_id} for route_id in subway_id],
+                                            multi=True, searchable=True,
+                                            value=[],
+                                            placeholder="Select a Subway route",
+                                            style={'display': 'block', 'color': '#000000', "margin-bottom": "0px"}
+                                        ),
+                                    ]
+                                )
+                            ]),
+                            
+                                html.Tr([
+                                html.Td(
+                                    colSpan=2,
+                                    style={'vertical-align': 'top'},
+                                    children=[
+                                        html.P("Citibike Region:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
+                                        dcc.Checklist(
+                                            id='select-all-citibike-region',
+                                            options=[{'label': 'Select All', 'value': 'ALL'}],
+                                            value=[],
+                                            inline=True,
+                                            style={"margin-top": "0px", 'color': '#ffffff'}
+                                        ),
+                                        dcc.Dropdown(
+                                            id='citibike-region-dropdown',
+                                            options=[{'label': region, 'value': region} for region in citibike_regions],
+                                            multi=True, searchable=True,
+                                            placeholder="Select a Citibike region",
+                                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
+                                        ),
+                                    ]
+                                )
+                            ]),
+                                html.Tr([
+                                html.Td(
+                                    colSpan=2,
+                                    style={'vertical-align': 'top'},
+                                    children=[
+                                        html.P("LIRR Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
+                                        dcc.Checklist(
+                                            id='select-all-lirr-route',
+                                            options=[{'label': 'Select All', 'value': 'ALL'}],
+                                            value=[],
+                                            inline=True,
+                                            style={"margin-top": "0px", 'color': '#ffffff'}
+                                        ),
+                                        dcc.Dropdown(
+                                            id='lirr-route-selector',
+                                            options=[{'label': str(route_id), 'value': route_id} for route_id in LIRR_id],
+                                            multi=True, searchable=True,
+                                            value=[],
+                                            placeholder="Select a LIRR route",
+                                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
+                                        ),
+                                    ]
+                                )
+                            ]),
+                                html.Tr([
+                                html.Td(
+                                    colSpan=2,
+                                    style={'vertical-align': 'top'},
+                                    children=[
+                                        html.P("MNR Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
+                                        dcc.Checklist(
+                                            id='select-all-mnr-route',
+                                            options=[{'label': 'Select All', 'value': 'ALL'}],
+                                            value=[],
+                                            inline=True,
+                                            style={"margin-top": "0px", 'color': '#ffffff'}
+                                        ),
+                                        dcc.Dropdown(
+                                            id='mnr-route-selector',
+                                            options=[{'label': str(route_id), 'value': route_id} for route_id in MNR_id],
+                                            multi=True,
+                                            value=[],
+                                            placeholder="Select a MNR route",
+                                            style={'display': 'block', 'color': '#000000', "margin-bottom": "5px"}
+                                        ),
+                                    ]
+                                )
+                            ]),
+                                html.Tr([
+                                html.Td(
+                                    colSpan=2,
+                                    style={'vertical-align': 'top'},
+                                    children=[
+                                        html.P("NJ Rail Route:", style={"font-weight": "bold", "font-size": "18px", "margin-bottom": "0px"}),
+                                        dcc.Checklist(
+                                            id='select-all-nj-route',
+                                            options=[{'label': 'Select All', 'value': 'ALL'}],
+                                            value=[],
+                                            inline=True,
+                                            style={"margin-top": "0px", 'color': '#ffffff'}
+                                        ),
+                                        dcc.Dropdown(
+                                            id='nj-transit-route-selector',
+                                            options=[{'label': str(route_id), 'value': route_id} for route_id in NJ_rail_id],
+                                            multi=True,
+                                            placeholder="Select a NJ Rail route",
+                                            style={'display': 'block', 'color': '#000000', "margin-bottom": "15px"}
+                                        ),
+                                    ]
+                                )
+                            ]),
+                            # Add more rows for the other sections (Citibike, LIRR, MNR, NJ Rail) here
+                        ]),
                         html.Button('Reset', id='reset-button', n_clicks=0)
                     ]
                 ),
                 html.Div(
-                    style={"width": "75%","margin-left": "20px"},
+                    style={"width": "75%", "margin-left": "10px"},
                     children=[
                         dbc.Card([
                             dbc.CardBody([
@@ -392,13 +448,14 @@ app.layout = html.Div(
                                     n_intervals=0
                                 )
                             ])
-                        ],style={"border": "none", "background-color": "transparent"})
+                        ], style={"border": "none", "background-color": "transparent"})
                     ]
                 )
             ]
         )
     ],
 )
+
 
 @app.callback(
     Output('boroughs_chosen', 'value'),
@@ -416,7 +473,7 @@ def select_all_boroughs(select_all):
 def select_all_subway_routes(select_all):
     if 'ALL' in select_all:
         return subway_id
-    return [subway_id[0]]
+    return []
 
 @app.callback(
     Output('citibike-region-dropdown', 'value'),
@@ -502,6 +559,16 @@ def update_bus_route_options(boroughs, select_all):
                     values.extend(bus_new_jersy_id)
     return values
 
+initial_values = {
+    'select-all-bus-regions': [],
+    'select-all-bus-route': [],
+    'select-all-subway-route': [],
+    'select-all-citibike-region': [],
+    'select-all-lirr-route': [],
+    'select-all-mnr-route': [],
+    'select-all-nj-route': [],
+}
+
 @app.callback(
     [Output('boroughs_chosen', 'value', allow_duplicate=True),
      Output('bus-routes-dropdown', 'value', allow_duplicate=True),
@@ -524,7 +591,7 @@ def update_bus_route_options(boroughs, select_all):
 def reset_selections(n_clicks):
     if n_clicks is None:
         return dash.no_update
-    return [], [], [subway_id[0]], [], [], [], [], [], [], [], [], [], [], []
+    return [], [], [], [], [], [], [], [], [], [], [], [], [], []
     
 def add_bus_location(fig, route_id):
     bus_data = export_bus_location(bus_API_KEY)
@@ -794,6 +861,19 @@ def update_map_and_real_time_data(subway_routes, boroughs, bus_routes, citibike_
         NJ_fig = update_map(NJ_gdf, 'NJ_gdf')
         for trace in NJ_fig.data:
             fig.add_trace(trace)
+            
+    fig.add_trace(go.Scattermapbox(
+        lat=[40.8],  # Default latitude
+        lon=[-74],  # Default longitude
+        mode='markers',
+        marker=go.scattermapbox.Marker(
+            size=0,  # Set size to 0 for transparency
+            color='rgba(0, 0, 0, 0)'  # Set color to transparent
+        ),
+        hoverinfo='none',  # Disable hover
+        showlegend=False
+    ))
+
 
     fig.update_layout(
         mapbox = {
