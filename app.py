@@ -834,4 +834,4 @@ def update_map_and_real_time_data(subway_routes, boroughs, bus_routes, citibike_
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(host="0.0.0.0", port=8050, debug=False)
